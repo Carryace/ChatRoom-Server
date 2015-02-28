@@ -23,13 +23,18 @@ public class MyServer {
 		return server_socket;
 	}
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		MyServer myserver = new MyServer();
 		System.out.println("My chat room server. Version Two.\n");
 		while (true) {
 			/**provide service to a new login user*/
-			MyService myService = new MyService(myserver.getSocket().accept());	
-			myService.start();
+			MyService myService;
+			try {
+				myService = new MyService(myserver.getSocket().accept());
+				myService.start();
+			} catch (IOException e) {
+				System.err.println("Server service accpetion error");
+			}	
 			
 		}
 	}
