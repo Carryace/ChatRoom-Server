@@ -1,14 +1,13 @@
 package Util;
 
 import java.io.Serializable;
-
+/**
+ * 
+ * @author Simiao Sun
+ *
+ */
 public class User implements Serializable{
 
-
-
-		/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 		String operation, account;
 		int age;
