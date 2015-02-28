@@ -1,103 +1,162 @@
 package Util;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 
-
-public class MyMessage implements Serializable{
-	/**
-	 * 
-	 */
+/**
+ * 
+ * @author Simiao Sun
+ *
+ */
+public class MyMessage implements Serializable {
 	private static final long serialVersionUID = 1L;
-	private String account_from, account_to;
+	private String from, to;
 	private String content;
 	private MessageType type;
 	private boolean to_all = false;
 	private String password;
-	private boolean login_result = false;
+	private boolean loginResult = false;
 	private ArrayList<String> online = new ArrayList<String>();
-	
-	public MyMessage(MessageType type){
+
+	public MyMessage(MessageType type) {
 		this.type = type;
 	}
-	
-	public MyMessage(String account){
-		this.account_from = account;
+
+	public MyMessage(String account) {
+		this.from = account;
 	}
-	
-	
-	public MyMessage(String account_from, String account_to, String content){
-		this.account_from = account_from;
-		this.account_to = account_to;
+
+	public MyMessage(String account_from, String account_to, String content) {
+		this.from = account_from;
+		this.to = account_to;
 		this.content = content;
 	}
-	
-	public String getFrom(){
-		return account_from;
+
+	/**
+	 * @return the from
+	 */
+	public String getFrom() {
+		return from;
 	}
-	
-	public String getTo(){
-		return account_to;
+
+	/**
+	 * @param from
+	 *            the from to set
+	 */
+	public void setFrom(String from) {
+		this.from = from;
 	}
-	
-	public String getContent(){
+
+	/**
+	 * @return the to
+	 */
+	public String getTo() {
+		return to;
+	}
+
+	/**
+	 * @param to
+	 *            the to to set
+	 */
+	public void setTo(String to) {
+		this.to = to;
+	}
+
+	/**
+	 * @return the content
+	 */
+	public String getContent() {
 		return content;
 	}
-	public void setAccount_from(String account_from) {
-		this.account_from = account_from;
-	}
 
-	public void setAccount_to(String account_to) {
-		this.account_to = account_to;
-	}
-
-	public void setLogin_result(boolean login_result) {
-		this.login_result = login_result;
-	}
-
-	public void setContent(String content){
+	/**
+	 * @param content
+	 *            the content to set
+	 */
+	public void setContent(String content) {
 		this.content = content;
 	}
 
-	public String getPassword() {
-		return password;
-	}
-
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
-
+	/**
+	 * @return the type
+	 */
 	public MessageType getType() {
 		return type;
 	}
 
-
+	/**
+	 * @param type
+	 *            the type to set
+	 */
 	public void setType(MessageType type) {
 		this.type = type;
 	}
-	
-	public void setLoginResult(boolean result){
-		this.login_result = result;
-	}
-	
-	public boolean getLoginResult(){
-		return login_result;
-	}
 
+	/**
+	 * @return the to_all
+	 */
 	public boolean isTo_all() {
 		return to_all;
 	}
 
+	/**
+	 * @param to_all
+	 *            the to_all to set
+	 */
 	public void setTo_all(boolean to_all) {
 		this.to_all = to_all;
 	}
 
+	/**
+	 * @return the password
+	 */
+	public String getPassword() {
+		return password;
+	}
+
+	/**
+	 * @param password
+	 *            the password to set
+	 */
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	/**
+	 * @return the loginResult
+	 */
+	public boolean isLoginResult() {
+		return loginResult;
+	}
+
+	/**
+	 * @param loginResult
+	 *            the loginResult to set
+	 */
+	public void setLoginResult(boolean loginResult) {
+		this.loginResult = loginResult;
+	}
+
+	/**
+	 * @return the online
+	 */
 	public ArrayList<String> getOnline() {
 		return online;
 	}
 
+	/**
+	 * @param online
+	 *            the online to set
+	 */
 	public void setOnline(ArrayList<String> online) {
 		this.online = online;
 	}
+
+	/**
+	 * @return the serialversionuid
+	 */
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
+
 }

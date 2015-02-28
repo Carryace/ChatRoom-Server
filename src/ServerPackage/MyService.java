@@ -83,30 +83,7 @@ public class MyService extends Thread {
 	 */
 	public void toLogout(MyMessage message) {
 		String account = message.getFrom();
-		if (connection) {
-			System.out.println(account + " logout.");
-			/** Inform all people that the client left the chat room */
-			if (ManageService.getOnline().size() > 0) {
-				for (int i = 0; i < ManageService.getOnline().size(); i++) {
-
-					MyService mservice = ManageService
-							.get_Specifc_Service(ManageService.getOnline().get(
-									i));
-					/** Try to send to every single current online users */
-					try {
-						ObjectOutputStream oos = new ObjectOutputStream(
-								mservice.getSocket().getOutputStream());
-						oos.writeObject(message);
-						oos.flush();
-					} catch (IOException e) {
-						System.err
-								.println("Logout message to "
-										+ ManageService.getOnline().get(i)
-										+ " failure");
-					}
-				}
-			}
-		} else {
+		if (!connection) {
 			try {
 				ObjectOutputStream oos = new ObjectOutputStream(
 						client.getOutputStream());
@@ -114,6 +91,26 @@ public class MyService extends Thread {
 				oos.flush();
 			} catch (IOException e) {
 				System.err.println("Logout message to message holder failure");
+			}
+			return;
+		}
+
+		System.out.println(account + " logout.");
+		/** Inform all people that the client left the chat room */
+		if (ManageService.getOnline().size() > 0) {
+			for (int i = 0; i < ManageService.getOnline().size(); i++) {
+				MyService mservice = ManageService
+						.get_Specifc_Service(ManageService.getOnline().get(i));
+				/** Try to send to every single current online users */
+				try {
+					ObjectOutputStream oos = new ObjectOutputStream(mservice
+							.getSocket().getOutputStream());
+					oos.writeObject(message);
+					oos.flush();
+				} catch (IOException e) {
+					System.err.println("Logout message to "
+							+ ManageService.getOnline().get(i) + " failure");
+				}
 			}
 		}
 	}
@@ -215,16 +212,8 @@ public class MyService extends Thread {
 	public void toLogin(MyMessage message) {
 		String account = message.getFrom();
 		String password = message.getPassword();
-		if (accounts.contains(account)
-				&& !ManageService.getOnline().contains(account)
-				&& verify.get(account).equals(password)
-				&& ManageService.getOnline().size() < MyServer.MAXCLIENTS) {
-			this.setConnection(true);
-			sendLoginResult(message, true);
-		} else {
-			sendLoginResult(message, false);
-			this.setConnection(false);
-		}
+		this.connection = accounts.contains(account) && !ManageService.getOnline().contains(account) && verify.get(account).equals(password) && ManageService.getOnline().size() < MyServer.MAXCLIENTS;
+		sendLoginResult(message, this.connection);
 
 	}
 
@@ -237,42 +226,25 @@ public class MyService extends Thread {
 	 * @param login_flag
 	 */
 	public void sendLoginResult(MyMessage message, boolean login_flag) {
-		if (login_flag) {
-			message.setLoginResult(true);
-			String account = message.getFrom();
-			ManageService.addService(this, account);
-			ManageService.addOnline(account);
-			this.setUser(account);
-			System.out.println(account + " login");
-			for (int i = 0; i < ManageService.getOnline().size(); i++) {
-				MyService mservice = ManageService
-						.get_Specifc_Service(ManageService.getOnline().get(i));
-				/**
-				 * Inform every single user that is currently online about the
-				 * login
-				 */
-				try {
-					ObjectOutputStream oos = new ObjectOutputStream(mservice
-							.getSocket().getOutputStream());
-					oos.writeObject(message);
-					oos.flush();
-				} catch (IOException e) {
-					System.err.println("Login result(true) to "
-							+ ManageService.getOnline().get(i) + " failure");
-				}
-			}
-		} else {
-			message.setLoginResult(false);
+		message.setLoginResult(login_flag);
+		
+		if (!login_flag) {
 			/** Inform the client the verification failure */
-			try {
-				ObjectOutputStream oos = new ObjectOutputStream(
-						client.getOutputStream());
-				oos.writeObject(message);
-				oos.flush();
-			} catch (IOException e) {
-				System.err
-						.println("Login result(false) to message holder failure");
-			}
+			this.sendMessage(message, client);
+			return;
+		}
+		
+		String account = message.getFrom();
+		ManageService.addService(this, account);
+		ManageService.addOnline(account);
+		this.setUser(account);
+		System.out.println(account + " login");
+		for (int i = 0; i < ManageService.getOnline().size(); i++) {
+			MyService mservice = ManageService
+					.get_Specifc_Service(ManageService.getOnline().get(i));
+			/** Inform every single user that is currently online about the login */
+			this.sendMessage(message, mservice.getSocket());
+
 		}
 	}
 
@@ -294,5 +266,18 @@ public class MyService extends Thread {
 
 	public void setConnection(boolean connection) {
 		this.connection = connection;
+	}
+
+	private boolean sendMessage(MyMessage message, Socket receiverSocket) {
+		try {
+			ObjectOutputStream oos = new ObjectOutputStream(
+					receiverSocket.getOutputStream());
+			oos.writeObject(message);
+			oos.flush();
+		} catch (IOException e) {
+			System.err.println("Error! Message sending error!");
+			return false;
+		}
+		return true;
 	}
 }

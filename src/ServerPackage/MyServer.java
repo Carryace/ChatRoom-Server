@@ -3,8 +3,9 @@ package ServerPackage;
 import java.io.IOException;
 
 import java.net.ServerSocket;
+
 /**
- * @author: Simiao Sun 
+ * @author: Simiao Sun
  */
 
 public class MyServer {
@@ -27,15 +28,15 @@ public class MyServer {
 		MyServer myserver = new MyServer();
 		System.out.println("My chat room server. Version Two.\n");
 		while (true) {
-			/**provide service to a new login user*/
+			/** provide service to a new login user */
 			MyService myService;
 			try {
 				myService = new MyService(myserver.getSocket().accept());
 				myService.start();
 			} catch (IOException e) {
 				System.err.println("Server service accpetion error");
-			}	
-			
+			}
+
 		}
 	}
 }
