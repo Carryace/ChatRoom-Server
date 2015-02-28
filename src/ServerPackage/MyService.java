@@ -11,12 +11,10 @@ import Util.MessageType;
 import Util.MyMessage;
 
 /**
- * @author: Simiao Sun 
+ * @author: Simiao Sun
  */
 public class MyService extends Thread {
-	// hold the socket for the current client
-	private Socket client;
-	/** hold the account and the password according to the account*/
+	private Socket client;// hold the socket for the current client
 	private HashMap<String, String> verify = new HashMap<String, String>();
 	private ArrayList<String> accounts = new ArrayList<String>();
 	private String user;
@@ -39,156 +37,168 @@ public class MyService extends Thread {
 	}
 
 	public void run() {
-
-		// Accept the current client
 		try {
-			boolean logout = false;// check whether the client wants to logout
-									// or not
-			ObjectOutputStream oos = null;
+			boolean logout = false;
 			ObjectInputStream ois = null;
 			while (logout == false) {
-				// Read the message sent from the client
 				ois = new ObjectInputStream(client.getInputStream());
 				MyMessage ms = (MyMessage) ois.readObject();
 				MessageType type = ms.getType();
-				/*
-				 * // Need to add a service when the client first send a message
-				 * to // the server if (num == 0) {
-				 * ManageService.addService(this, ms.getFrom()); user =
-				 * ms.getFrom(); num = 1; }
-				 */
-			
-				
 				if (type.getM_type().equals(MessageType.LOG_IN)) {
-					// verify the account name and the password
-					boolean in = false;
-					String account = ms.getFrom();
-					String password = ms.getPassword();
-					// Check whether the account has been online or not
-					if (accounts.contains(account)
-							&& !ManageService.getOnline().contains(account)) {
-						if (verify.get(account).equals(password)) {
-							in = true;
-
-						}
-					}
-					if (in) {
-						// Check whether the current number of clients online
-						// has exceeded the max clients number or not
-						if (ManageService.getOnline().size() < MyServer.MAXCLIENTS) {
-							ms.setLoginResult(true);
-							ManageService.addService(this, ms.getFrom());
-							ManageService.addOnline(account);
-							this.setUser(ms.getFrom());
-							System.out.println(account + " login");
-						} else {
-							ms.setLoginResult(false);
-						}
-					} else {
-						ms.setLoginResult(false);
-					}
-					// if the verification succeed, we send to all about this
-					// login information
-					if (ms.getLoginResult()) {
-
-						for (int i = 0; i < ManageService.getOnline().size(); i++) {
-							MyService mservice = ManageService
-									.get_Specifc_Service(ManageService
-											.getOnline().get(i));
-							oos = new ObjectOutputStream(mservice.getSocket()
-									.getOutputStream());
-							oos.writeObject(ms);
-							oos.flush();
-						}
-					} else {
-						// if the verification process failed, send back the
-						// information to deny the login
-						oos = new ObjectOutputStream(client.getOutputStream());
-						oos.writeObject(ms);
-						oos.flush();
-					}
+					toLogin(ms);
 
 				} else if (type.getM_type().equals(MessageType.ASK_LIST)) {
-					// send the arraylist of account names to the client
-					ms.setOnline(ManageService.getOnline());
-					oos = new ObjectOutputStream(client.getOutputStream());
-					oos.writeObject(ms);
-					oos.flush();
-
+					toList(ms);
 				} else if (type.getM_type().equals(MessageType.MESSAGE)) {
-					// if this is a message from the client
-					String account = ms.getFrom();
-					String content = ms.getContent();
-					// Check is this message meant to send to all or not
-					if (ms.isTo_all() == true) {
-						// send to all the current clients online
-						System.out.println(account + ": " + content);
-						for (int i = 0; i < ManageService.getOnline().size(); i++) {
-							if (!ManageService.getOnline().get(i)
-									.equals(account)) {
-								MyService mservice = ManageService
-										.get_Specifc_Service(ManageService
-												.getOnline().get(i));
-								oos = new ObjectOutputStream(mservice
-										.getSocket().getOutputStream());
-								oos.writeObject(ms);
-								oos.flush();
-							}
-						}
-					} else {
-						// send to a particular client
-						String account_to = ms.getTo();
-						if (ManageService.getOnline().contains(account_to)) {
-							System.out.println(account + "(to " + account_to
-									+ "): " + content);
-							MyService mservice = ManageService
-									.get_Specifc_Service(account_to);
-
-							oos = new ObjectOutputStream(mservice.getSocket()
-									.getOutputStream());
-							oos.writeObject(ms);
-							oos.flush();
-						} else {
-							// If this account is not currently online, just
-							// print out cannot reach this account right now
-							System.out.println(account_to + " cannot reach");
-						}
-					}
+					toSend(ms);
 
 				} else if (type.getM_type().equals(MessageType.LOG_OUT)) {
-					String account = ms.getFrom();
-					System.out.println(account + " logout.");
-					// Inform all people that the client left the chat room
-					if (ManageService.getOnline().size() > 0) {
-						for (int i = 0; i < ManageService.getOnline().size(); i++) {
-
-							MyService mservice = ManageService
-									.get_Specifc_Service(ManageService
-											.getOnline().get(i));
-							oos = new ObjectOutputStream(mservice.getSocket()
-									.getOutputStream());
-							oos.writeObject(ms);
-							oos.flush();
-
-						}
-					}
+					toLogout(ms);
 					logout = true;
-
 				}
-
 			}
-			// delete the service and the account name from the current online
-			// arraylist
 			ManageService.delete_Specific_Service(user);
-			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
+	}
+
+	private void toLogout(MyMessage ms) {
+		String account = ms.getFrom();
+		System.out.println(account + " logout.");
+		// Inform all people that the client left the chat room
+		if (ManageService.getOnline().size() > 0) {
+			for (int i = 0; i < ManageService.getOnline().size(); i++) {
+
+				MyService mservice = ManageService
+						.get_Specifc_Service(ManageService.getOnline().get(i));
+				try {
+					ObjectOutputStream oos = new ObjectOutputStream(mservice
+							.getSocket().getOutputStream());
+					oos.writeObject(ms);
+					oos.flush();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	private void toSend(MyMessage message) {
+		// Check is this message meant to send to all or not
+		if (message.isTo_all() == true) {
+			// send to all the current clients online
+			sendAll(message);
+			System.out.println(message.getFrom() + ": " + message.getContent());
+		} else {
+			// send to a particular client
+			sendOne(message);
+		}
+	}
+
+	private void sendOne(MyMessage message) {
+		String account = message.getFrom();
+		String content = message.getContent();
+		String account_to = message.getTo();
+		if (ManageService.getOnline().contains(account_to)) {
+			System.out.println(account + "(to " + account_to + "): " + content);
+			MyService mservice = ManageService.get_Specifc_Service(account_to);
+
+			try {
+				ObjectOutputStream oos = new ObjectOutputStream(mservice
+						.getSocket().getOutputStream());
+				oos.writeObject(message);
+				oos.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			System.out.println(account_to + " cannot reach");
+		}
+	}
+
+	private void sendAll(MyMessage message) {
+		String account = message.getFrom();
+
+		for (int i = 0; i < ManageService.getOnline().size(); i++) {
+			if (!ManageService.getOnline().get(i).equals(account)) {
+				MyService mservice = ManageService
+						.get_Specifc_Service(ManageService.getOnline().get(i));
+				try {
+					ObjectOutputStream oos = new ObjectOutputStream(mservice
+							.getSocket().getOutputStream());
+					oos.writeObject(message);
+					oos.flush();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+			}
+		}
+	}
+
+	private void toList(MyMessage message) {
+		message.setOnline(ManageService.getOnline());
+		try {
+			ObjectOutputStream oos = new ObjectOutputStream(
+					client.getOutputStream());
+			oos.writeObject(message);
+			oos.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	public void toLogin(MyMessage message) {
+		String account = message.getFrom();
+		String password = message.getPassword();
+		if (accounts.contains(account)
+				&& !ManageService.getOnline().contains(account)
+				&& verify.get(account).equals(password)
+				&& ManageService.getOnline().size() < MyServer.MAXCLIENTS) {
+			sendLoginResult(message, true);
+		} else {
+			sendLoginResult(message, false);
+
+		}
+
+	}
+
+	public void sendLoginResult(MyMessage message, boolean login_flag) {
+		if (login_flag) {
+			message.setLoginResult(true);
+			String account = message.getFrom();
+			ManageService.addService(this, account);
+			ManageService.addOnline(account);
+			this.setUser(account);
+			System.out.println(account + " login");
+			for (int i = 0; i < ManageService.getOnline().size(); i++) {
+				MyService mservice = ManageService
+						.get_Specifc_Service(ManageService.getOnline().get(i));
+				try {
+					ObjectOutputStream oos = new ObjectOutputStream(mservice
+							.getSocket().getOutputStream());
+					oos.writeObject(message);
+					oos.flush();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		} else {
+			message.setLoginResult(false);
+			try {
+				ObjectOutputStream oos = new ObjectOutputStream(
+						client.getOutputStream());
+				oos.writeObject(message);
+				oos.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public String getUser() {
