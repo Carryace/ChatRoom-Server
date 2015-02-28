@@ -12,6 +12,7 @@ import Util.MyMessage;
 
 /**
  * @author: Simiao Sun
+ * Service thread to maintain connection between the server and the client
  */
 public class MyService extends Thread {
 	private Socket client;// hold the socket for the current client
@@ -21,7 +22,7 @@ public class MyService extends Thread {
 
 	public MyService(Socket client) {
 		this.client = client;
-		// put in all the information about the account and the password
+		/** put in all the information about the account and the password*/
 		accounts.add("tom");
 		accounts.add("david");
 		accounts.add("beth");
@@ -32,30 +33,17 @@ public class MyService extends Thread {
 		verify.put("john", "john44");
 	}
 
-	public Socket getSocket() {
-		return client;
-	}
 
 	public void run() {
 		try {
-			boolean logout = false;
+			boolean logout_flag = false;
 			ObjectInputStream ois = null;
-			while (logout == false) {
+			/**Check message sent from the client and prepare the response*/
+			while (logout_flag == false) {
 				ois = new ObjectInputStream(client.getInputStream());
-				MyMessage ms = (MyMessage) ois.readObject();
-				MessageType type = ms.getType();
-				if (type.getM_type().equals(MessageType.LOG_IN)) {
-					toLogin(ms);
-
-				} else if (type.getM_type().equals(MessageType.ASK_LIST)) {
-					toList(ms);
-				} else if (type.getM_type().equals(MessageType.MESSAGE)) {
-					toSend(ms);
-
-				} else if (type.getM_type().equals(MessageType.LOG_OUT)) {
-					toLogout(ms);
-					logout = true;
-				}
+				MyMessage message = (MyMessage) ois.readObject();
+				/**Classify received message to create different response*/
+				logout_flag = messageClassifier(message);
 			}
 			ManageService.delete_Specific_Service(user);
 		} catch (IOException e) {
@@ -66,19 +54,44 @@ public class MyService extends Thread {
 
 	}
 
-	private void toLogout(MyMessage ms) {
-		String account = ms.getFrom();
+	/**
+	 * Classify the message according to the message type
+	 * @param message
+	 * @return false only when the message type is logout
+	 */
+	public boolean messageClassifier(MyMessage message) {
+		MessageType type = message.getType();
+		if (type.getM_type().equals(MessageType.LOG_IN)) {
+			toLogin(message);
+		} else if (type.getM_type().equals(MessageType.ASK_LIST)) {
+			toList(message);
+		} else if (type.getM_type().equals(MessageType.MESSAGE)) {
+			toSend(message);
+		} else if (type.getM_type().equals(MessageType.LOG_OUT)) {
+			toLogout(message);
+			return true;
+		}		
+		return false;
+	}
+
+	/**
+	 * Respond to client's 'logout' command, inform all current online users that the message holder has left
+	 * @param message
+	 */
+	public void toLogout(MyMessage message) {
+		String account = message.getFrom();
 		System.out.println(account + " logout.");
-		// Inform all people that the client left the chat room
+		/** Inform all people that the client left the chat room*/
 		if (ManageService.getOnline().size() > 0) {
 			for (int i = 0; i < ManageService.getOnline().size(); i++) {
 
 				MyService mservice = ManageService
 						.get_Specifc_Service(ManageService.getOnline().get(i));
+				/**Try to send to every single current online users*/
 				try {
 					ObjectOutputStream oos = new ObjectOutputStream(mservice
 							.getSocket().getOutputStream());
-					oos.writeObject(ms);
+					oos.writeObject(message);
 					oos.flush();
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -87,26 +100,32 @@ public class MyService extends Thread {
 		}
 	}
 
-	private void toSend(MyMessage message) {
-		// Check is this message meant to send to all or not
+	/**
+	 * Respond to client's 'send' command, either send to all users or send to a specific user
+	 * @param message
+	 */
+	public void toSend(MyMessage message) {
 		if (message.isTo_all() == true) {
-			// send to all the current clients online
+			/** send to all the current clients online*/
 			sendAll(message);
 			System.out.println(message.getFrom() + ": " + message.getContent());
 		} else {
-			// send to a particular client
+			/** send to a particular client*/
 			sendOne(message);
 		}
 	}
 
-	private void sendOne(MyMessage message) {
+	/**
+	 * Send message to a single user that pointed by the message holder
+	 * @param message
+	 */
+	public void sendOne(MyMessage message) {
 		String account = message.getFrom();
 		String content = message.getContent();
 		String account_to = message.getTo();
 		if (ManageService.getOnline().contains(account_to)) {
 			System.out.println(account + "(to " + account_to + "): " + content);
 			MyService mservice = ManageService.get_Specifc_Service(account_to);
-
 			try {
 				ObjectOutputStream oos = new ObjectOutputStream(mservice
 						.getSocket().getOutputStream());
@@ -120,13 +139,17 @@ public class MyService extends Thread {
 		}
 	}
 
-	private void sendAll(MyMessage message) {
+	/**
+	 * Send to all the users currently online
+	 * @param message
+	 */
+	public void sendAll(MyMessage message) {
 		String account = message.getFrom();
-
 		for (int i = 0; i < ManageService.getOnline().size(); i++) {
 			if (!ManageService.getOnline().get(i).equals(account)) {
 				MyService mservice = ManageService
 						.get_Specifc_Service(ManageService.getOnline().get(i));
+				/**Try to send message to every single user*/
 				try {
 					ObjectOutputStream oos = new ObjectOutputStream(mservice
 							.getSocket().getOutputStream());
@@ -140,7 +163,11 @@ public class MyService extends Thread {
 		}
 	}
 
-	private void toList(MyMessage message) {
+	/**
+	 * Respond to client's 'who' command, send all the current online users name to the client
+	 * @param message
+	 */
+	public void toList(MyMessage message) {
 		message.setOnline(ManageService.getOnline());
 		try {
 			ObjectOutputStream oos = new ObjectOutputStream(
@@ -153,6 +180,10 @@ public class MyService extends Thread {
 
 	}
 
+	/**
+	 * Respond to client's 'login' command, send back the result of the verification
+	 * @param message
+	 */
 	public void toLogin(MyMessage message) {
 		String account = message.getFrom();
 		String password = message.getPassword();
@@ -168,6 +199,13 @@ public class MyService extends Thread {
 
 	}
 
+	/**
+	 * Send back the result of the verification
+	 * When the login_flag is true: Inform every the client's login
+	 * When the login_flag is false: Inform only the client the verification failure
+	 * @param message
+	 * @param login_flag
+	 */
 	public void sendLoginResult(MyMessage message, boolean login_flag) {
 		if (login_flag) {
 			message.setLoginResult(true);
@@ -179,6 +217,7 @@ public class MyService extends Thread {
 			for (int i = 0; i < ManageService.getOnline().size(); i++) {
 				MyService mservice = ManageService
 						.get_Specifc_Service(ManageService.getOnline().get(i));
+				/**Inform every single user that is currently online about the login*/
 				try {
 					ObjectOutputStream oos = new ObjectOutputStream(mservice
 							.getSocket().getOutputStream());
@@ -190,6 +229,7 @@ public class MyService extends Thread {
 			}
 		} else {
 			message.setLoginResult(false);
+			/**Inform the client the verification failure*/
 			try {
 				ObjectOutputStream oos = new ObjectOutputStream(
 						client.getOutputStream());
@@ -207,5 +247,9 @@ public class MyService extends Thread {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+	
+	public Socket getSocket() {
+		return client;
 	}
 }

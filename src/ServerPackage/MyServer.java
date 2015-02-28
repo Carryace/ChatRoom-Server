@@ -3,8 +3,8 @@ package ServerPackage;
 import java.io.IOException;
 
 import java.net.ServerSocket;
-/*
- * author: Simiao Sun 14200883
+/**
+ * @author: Simiao Sun 
  */
 
 public class MyServer {
@@ -27,8 +27,8 @@ public class MyServer {
 		MyServer myserver = new MyServer();
 		System.out.println("My chat room server. Version Two.\n");
 		while (true) {
+			/**provide service to a new login user*/
 			MyService myService = new MyService(myserver.getSocket().accept());	
-			//start a new service to run for the client
 			myService.start();
 			
 		}
