@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 /**
  * author: Simiao Sun
- * This class is created to manage the service thread on the server
  */
 
 public class ManageService {

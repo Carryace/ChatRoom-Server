@@ -9,34 +9,55 @@ import java.net.ServerSocket;
  */
 
 public class MyServer {
+	/**set limit for the number of client*/
 	public static final int MAXCLIENTS = 3;
-	private ServerSocket server_socket;
+	private ServerSocket serverSocket;
+	/**detect the port validation*/
+	private boolean portDetector = true;
 
 	public MyServer() {
 		try {
-			server_socket = new ServerSocket(10884);
+			serverSocket = new ServerSocket(10884);
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.err.println("Error!Port already in use");
+			this.setPortDetector(false);
 		}
+
 	}
 
 	public ServerSocket getSocket() {
-		return server_socket;
+		return serverSocket;
+	}
+
+	/**
+	 * @return the portDetector
+	 */
+	public boolean isPortDetector() {
+		return portDetector;
+	}
+
+	/**
+	 * @param portDetector
+	 *            the portDetector to set
+	 */
+	public void setPortDetector(boolean portDetector) {
+		this.portDetector = portDetector;
 	}
 
 	public static void main(String[] args) {
 		MyServer myserver = new MyServer();
-		System.out.println("My chat room server. Version Two.\n");
-		while (true) {
-			/** provide service to a new login user */
-			MyService myService;
-			try {
-				myService = new MyService(myserver.getSocket().accept());
-				myService.start();
-			} catch (IOException e) {
-				System.err.println("Server service accpetion error");
+		if (myserver.isPortDetector()) {
+			System.out.println("My chat room server. Version Two.\n");
+			while (true) {
+				/** provide service to a new login user */
+				MyService myService;
+				try {
+					myService = new MyService(myserver.getSocket().accept());
+					myService.start();
+				} catch (IOException e) {
+					System.err.println("Server service accpetion error");
+				}
 			}
-
 		}
 	}
 }

@@ -8,6 +8,9 @@ import java.io.Serializable;
  *
  */
 public class MessageType implements Serializable {
+	/**
+	 * define the message type
+	 */
 	private static final long serialVersionUID = 1L;
 	public static final String LOG_IN = "login";
 	public static final String MESSAGE = "message";

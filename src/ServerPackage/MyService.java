@@ -11,8 +11,7 @@ import Util.MessageType;
 import Util.MyMessage;
 
 /**
- * @author: Simiao Sun Service thread to maintain connection between the server
- *          and the client
+ * @author: Simiao Sun 
  */
 public class MyService extends Thread {
 	private Socket client;// hold the socket for the current client
@@ -84,14 +83,8 @@ public class MyService extends Thread {
 	public void toLogout(MyMessage message) {
 		String account = message.getFrom();
 		if (!connection) {
-			try {
-				ObjectOutputStream oos = new ObjectOutputStream(
-						client.getOutputStream());
-				oos.writeObject(message);
-				oos.flush();
-			} catch (IOException e) {
-				System.err.println("Logout message to message holder failure");
-			}
+			this.sendMessage(message, client);
+
 			return;
 		}
 
@@ -102,15 +95,7 @@ public class MyService extends Thread {
 				MyService mservice = ManageService
 						.get_Specifc_Service(ManageService.getOnline().get(i));
 				/** Try to send to every single current online users */
-				try {
-					ObjectOutputStream oos = new ObjectOutputStream(mservice
-							.getSocket().getOutputStream());
-					oos.writeObject(message);
-					oos.flush();
-				} catch (IOException e) {
-					System.err.println("Logout message to "
-							+ ManageService.getOnline().get(i) + " failure");
-				}
+				this.sendMessage(message, mservice.getSocket());
 			}
 		}
 	}
@@ -144,15 +129,8 @@ public class MyService extends Thread {
 		if (ManageService.getOnline().contains(account_to)) {
 			System.out.println(account + "(to " + account_to + "): " + content);
 			MyService mservice = ManageService.get_Specifc_Service(account_to);
-			try {
-				ObjectOutputStream oos = new ObjectOutputStream(mservice
-						.getSocket().getOutputStream());
-				oos.writeObject(message);
-				oos.flush();
-			} catch (IOException e) {
-				System.err
-						.println("Send message to " + account_to + " failure");
-			}
+			this.sendMessage(message, mservice.getSocket());
+
 		} else {
 			System.out.println(account_to + " cannot reach");
 		}
@@ -170,15 +148,7 @@ public class MyService extends Thread {
 				MyService mservice = ManageService
 						.get_Specifc_Service(ManageService.getOnline().get(i));
 				/** Try to send message to every single user */
-				try {
-					ObjectOutputStream oos = new ObjectOutputStream(mservice
-							.getSocket().getOutputStream());
-					oos.writeObject(message);
-					oos.flush();
-				} catch (IOException e) {
-					System.err.println("Send message to "
-							+ ManageService.getOnline().get(i) + " failure");
-				}
+				this.sendMessage(message, mservice.getSocket());
 
 			}
 		}
@@ -192,14 +162,7 @@ public class MyService extends Thread {
 	 */
 	public void toList(MyMessage message) {
 		message.setOnline(ManageService.getOnline());
-		try {
-			ObjectOutputStream oos = new ObjectOutputStream(
-					client.getOutputStream());
-			oos.writeObject(message);
-			oos.flush();
-		} catch (IOException e) {
-			System.err.println("User list back to message holder failure");
-		}
+		this.sendMessage(message, client);
 
 	}
 
@@ -212,7 +175,8 @@ public class MyService extends Thread {
 	public void toLogin(MyMessage message) {
 		String account = message.getFrom();
 		String password = message.getPassword();
-		this.connection = accounts.contains(account) && !ManageService.getOnline().contains(account) && verify.get(account).equals(password) && ManageService.getOnline().size() < MyServer.MAXCLIENTS;
+		this.connection = accounts.contains(account) && !ManageService.getOnline().contains(account) && 
+				verify.get(account).equals(password) && ManageService.getOnline().size() < MyServer.MAXCLIENTS;
 		sendLoginResult(message, this.connection);
 
 	}
